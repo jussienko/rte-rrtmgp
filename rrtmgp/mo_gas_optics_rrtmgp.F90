@@ -693,10 +693,10 @@ contains
       !$omp end target data
 
       if (present(col_dry)) then
-        !$acc        exit data
-        !$omp target exit data
+        !$acc        exit data delete(      col_dry)
+        !$omp target exit data map(release: col_dry)
       else
-        !$acc        exit data delete(   col_dry_arr)                                                        
+        !$acc        exit data delete(     col_dry_arr)                                                        
         !$omp target exit data map(release:col_dry_arr)                                                            end if
       
         select type(optical_props)
