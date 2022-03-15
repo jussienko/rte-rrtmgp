@@ -288,8 +288,8 @@ contains
     !
     ! Compute the radiative transfer...
     !
-    !$acc        data create(   sfc_emis_gpt, flux_up_loc, flux_dn_loc, gpt_flux_up, gpt_flux_dn)
-    !$omp target data map(alloc:sfc_emis_gpt, flux_up_loc, flux_dn_loc, gpt_flux_up, gpt_flux_dn)
+    !$acc        data create(   sfc_emis_gpt, flux_up_loc, flux_dn_loc, gpt_flux_up, gpt_flux_dn) copyin(gauss_Ds)
+    !$omp target data map(alloc:sfc_emis_gpt, flux_up_loc, flux_dn_loc, gpt_flux_up, gpt_flux_dn) map(to:gauss_Ds)
     call expand_and_transpose(optical_props, sfc_emis, sfc_emis_gpt)
     if(check_values) error_msg =  optical_props%validate()
     if(len_trim(error_msg) == 0) then ! Can't do an early return within OpenACC/MP data regions
@@ -318,7 +318,7 @@ contains
             !
             !   Is there an alternative to making ncol x ngpt copies of each value?
             !
-            !$acc                         parallel loop    collapse(3) copyin(gauss_Ds)
+            !$acc                         parallel loop    collapse(3)
             !$omp target teams distribute parallel do simd collapse(3)
             do imu = 1, n_quad_angs
               do igpt = 1, ngpt
@@ -359,7 +359,7 @@ contains
             allocate(secants(ncol, ngpt, n_quad_angs))
             !$acc        data create(   secants)
             !$omp target data map(alloc:secants)
-            !$acc                         parallel loop    collapse(3) copyin(gauss_Ds)
+            !$acc                         parallel loop    collapse(3)
             !$omp target teams distribute parallel do simd collapse(3)
             do imu = 1, n_quad_angs
               do igpt = 1, ngpt
