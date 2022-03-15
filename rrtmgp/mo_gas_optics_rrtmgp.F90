@@ -699,17 +699,18 @@ contains
         !$acc        exit data delete(   col_dry_arr)                                                        
         !$omp target exit data map(release:col_dry_arr)                                                            end if
       
-      select type(optical_props)
-        type is (ty_optical_props_1scl)
-          !$acc        exit data delete(optical_props) copyout( optical_props%tau)
-          !$omp target exit data                       map(from:optical_props%tau)
-        type is (ty_optical_props_2str)
-          !$acc        exit data delete(optical_props) copyout( optical_props%tau, optical_props%ssa, optical_props%g)
-          !$omp target exit data                       map(from:optical_props%tau, optical_props%ssa, optical_props%g)
-        type is (ty_optical_props_nstr)
-          !$acc        exit data delete(optical_props) copyout( optical_props%tau, optical_props%ssa, optical_props%p)
-          !$omp target exit data                       map(from:optical_props%tau, optical_props%ssa, optical_props%p)
-      end select
+        select type(optical_props)
+          type is (ty_optical_props_1scl)
+            !$acc        exit data delete(optical_props) copyout( optical_props%tau)
+            !$omp target exit data                       map(from:optical_props%tau)
+          type is (ty_optical_props_2str)
+            !$acc        exit data delete(optical_props) copyout( optical_props%tau, optical_props%ssa, optical_props%g)
+            !$omp target exit data                       map(from:optical_props%tau, optical_props%ssa, optical_props%g)
+          type is (ty_optical_props_nstr)
+            !$acc        exit data delete(optical_props) copyout( optical_props%tau, optical_props%ssa, optical_props%p)
+            !$omp target exit data                       map(from:optical_props%tau, optical_props%ssa, optical_props%p)
+        end select
+      end if
     end if ! error_msg == ''
 
     !$acc end        data
