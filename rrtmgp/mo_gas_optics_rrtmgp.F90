@@ -154,26 +154,26 @@ module mo_gas_optics_rrtmgp
     ! Type-bound procedures
     ! Public procedures
     ! public interface
+    procedure, public :: get_ngas
+    procedure, private :: get_nflav
+    procedure, public  :: gas_optics_int
+    procedure, public  :: gas_optics_ext
+    procedure, public :: set_tsi
+    procedure, public :: set_solar_variability
     generic,   public :: load       => load_int,       load_ext
+    procedure, private :: load_int
+    procedure, private :: load_ext
     procedure, public :: source_is_internal
     procedure, public :: source_is_external
-    procedure, public :: get_ngas
     procedure, public :: get_gases
     procedure, public :: get_press_min
     procedure, public :: get_press_max
     procedure, public :: get_temp_min
     procedure, public :: get_temp_max
     procedure, public :: compute_optimal_angles
-    procedure, public :: set_solar_variability
-    procedure, public :: set_tsi
     ! Internal procedures
-    procedure, private :: load_int
-    procedure, private :: load_ext
-    procedure, public  :: gas_optics_int
-    procedure, public  :: gas_optics_ext
     procedure, private :: check_key_species_present
     ! Interpolation table dimensions
-    procedure, private :: get_nflav
     procedure, private :: get_neta
     procedure, private :: get_npres
     procedure, private :: get_ntemp
@@ -533,20 +533,18 @@ contains
           error_msg = gas_desc%get_vmr(this%gas_names(igas), vmr(:,:,igas))
         endif
       end do
-    end if
 
-    if(error_msg == '') then
-
+      !$acc data copyin(optical_props)
       select type(optical_props)
         type is (ty_optical_props_1scl)
-          !$acc        enter data copyin(optical_props) create(   optical_props%tau)
-          !$omp target enter data                       map(alloc:optical_props%tau)
+          !$acc        enter data create(   optical_props%tau)
+          !$omp target enter data map(alloc:optical_props%tau)
         type is (ty_optical_props_2str)
-          !$acc        enter data copyin(optical_props) create(   optical_props%tau, optical_props%ssa, optical_props%g)
-          !$omp target enter data                       map(alloc:optical_props%tau, optical_props%ssa, optical_props%g)
+          !$acc        enter data create(   optical_props%tau, optical_props%ssa, optical_props%g)
+          !$omp target enter data map(alloc:optical_props%tau, optical_props%ssa, optical_props%g)
         type is (ty_optical_props_nstr)
-          !$acc        enter data copyin(optical_props) create(   optical_props%tau, optical_props%ssa, optical_props%p)
-          !$omp target enter data                       map(alloc:optical_props%tau, optical_props%ssa, optical_props%p)
+          !$acc        enter data create(   optical_props%tau, optical_props%ssa, optical_props%p)
+          !$omp target enter data map(alloc:optical_props%tau, optical_props%ssa, optical_props%p)
       end select
       !
       ! Compute dry air column amounts (number of molecule per cm^2) if user hasn't provided them
@@ -697,26 +695,27 @@ contains
         !$omp target exit data map(release: col_dry)
       else
         !$acc        exit data delete(     col_dry_arr)                                                        
-        !$omp target exit data map(release:col_dry_arr)                                                            end if
-      end if 
+        !$omp target exit data map(release:col_dry_arr)
+      end if
 
       select type(optical_props)
         type is (ty_optical_props_1scl)
-          !$acc        exit data delete(optical_props) copyout( optical_props%tau)
-          !$omp target exit data                       map(from:optical_props%tau)
+          !$acc        exit data copyout( optical_props%tau)
+          !$omp target exit data map(from:optical_props%tau)
         type is (ty_optical_props_2str)
-          !$acc        exit data delete(optical_props) copyout( optical_props%tau, optical_props%ssa, optical_props%g)
-          !$omp target exit data                       map(from:optical_props%tau, optical_props%ssa, optical_props%g)
+          !$acc        exit data copyout( optical_props%tau, optical_props%ssa, optical_props%g)
+          !$omp target exit data map(from:optical_props%tau, optical_props%ssa, optical_props%g)
         type is (ty_optical_props_nstr)
-          !$acc        exit data delete(optical_props) copyout( optical_props%tau, optical_props%ssa, optical_props%p)
-          !$omp target exit data                       map(from:optical_props%tau, optical_props%ssa, optical_props%p)
+          !$acc        exit data copyout( optical_props%tau, optical_props%ssa, optical_props%p)
+          !$omp target exit data map(from:optical_props%tau, optical_props%ssa, optical_props%p)
       end select
-
+      !$acc end data
     end if ! error_msg == ''
 
     !$acc end        data
     !$omp end target data
   end function compute_gas_taus
+
   !------------------------------------------------------------------------------------------
   !
   ! Compute the spectral solar source function adjusted to account for solar variability
@@ -770,6 +769,7 @@ contains
     if (present(tsi)) error_msg = this%set_tsi(tsi)
 
   end function set_solar_variability
+
   !------------------------------------------------------------------------------------------
   function set_tsi(this, tsi) result(error_msg)
     !
@@ -780,6 +780,7 @@ contains
     character(len=128)                         :: error_msg
 
     real(wp) :: norm
+    integer  :: igpt
     ! ----------------------------------------------------------
     error_msg = ""
     if(tsi < 0._wp) then
@@ -787,14 +788,30 @@ contains
     else
       !
       ! Scale the solar source function to the input tsi
-      !
+       !
+#ifdef _CRAYFTN
+      ! BUG-FIX for CCE 12.0.3 -- remove as soon as possible
+      !$acc parallel loop reduction (+:norm)
+      !$omp target teams distribute parallel do simd   ! TODO
+      do igpt = 1, size(this%solar_source)
+        norm = norm + this%solar_source(igpt)
+      enddo
+      norm = 1._wp / norm    
+      !$acc parallel loop
+      !$omp target teams distribute parallel do simd
+      do igpt = 1, size(this%solar_source)
+        this%solar_source(igpt) = this%solar_source(igpt) * tsi * norm
+      enddo
+#else
       !$acc kernels
       !$omp target
       norm = 1._wp/sum(this%solar_source(:))
       this%solar_source(:) = this%solar_source(:) * tsi * norm
       !$acc end kernels
       !$omp end target
-    end if
+#endif
+
+   end if
 
   end function set_tsi
   !------------------------------------------------------------------------------------------
@@ -890,6 +907,7 @@ contains
     !$acc end        data
     !$omp end target data
   end function source
+
   !--------------------------------------------------------------------------------------------------------------------
   !
   ! Initialization
@@ -1053,7 +1071,7 @@ contains
                                  allocatable :: rayl_lower, rayl_upper
     character(len = 128) err_message
 
-    integer :: ngpt
+    integer :: ngpt, igpt
     ! ----
     !$acc enter data copyin(this)
     err_message = init_abs_coeffs(this, &
@@ -1085,6 +1103,16 @@ contains
              this%solar_source_sunspot(ngpt), this%solar_source(ngpt))
     !$acc        enter data create(   this%solar_source_quiet, this%solar_source_facular, this%solar_source_sunspot, this%solar_source)
     !$omp target enter data map(alloc:this%solar_source_quiet, this%solar_source_facular, this%solar_source_sunspot, this%solar_source)
+#ifdef _CRAYFTN
+      ! BUG-FIX for CCE 12.0.3 -- remove as soon as possible
+      !$acc parallel loop
+      !$omp target teams distribute parallel do simd   ! TODO
+      do igpt = 1, ngpt
+        this%solar_source_quiet(igpt)   = solar_quiet(igpt)
+        this%solar_source_facular(igpt) = solar_facular(igpt)
+        this%solar_source_sunspot(igpt) = solar_sunspot(igpt)
+      enddo
+#else
     !$acc kernels
     !$omp target
     this%solar_source_quiet   = solar_quiet
@@ -1092,8 +1120,10 @@ contains
     this%solar_source_sunspot = solar_sunspot
     !$acc end kernels
     !$omp end target
+#endif
     err_message = this%set_solar_variability(mg_default, sb_default)
   end function load_ext
+
   !--------------------------------------------------------------------------------------------------------------------
   !
   ! Initialize absorption coefficient arrays,
@@ -1119,7 +1149,7 @@ contains
                            kminor_start_lower, &
                            kminor_start_upper, &
                            rayl_lower, rayl_upper) result(err_message)
-    class(ty_gas_optics_rrtmgp), intent(inout) :: this
+    class(ty_gas_optics_rrtmgp), target, intent(inout) :: this
     class(ty_gas_concs),                intent(in   ) :: available_gases
     character(len=*), &
               dimension(:),       intent(in) :: gas_names
@@ -1157,6 +1187,9 @@ contains
     logical,  dimension(:),     allocatable :: key_species_present_init
     integer,  dimension(:,:,:), allocatable :: key_species_red
     real(wp), dimension(:,:,:), allocatable :: vmr_ref_red
+    real(wp), dimension(:,:,:), pointer     :: vmr_ref_ptr
+    character(len=32),  dimension(:), pointer :: character_32_ptr
+    character(len=256), dimension(:), pointer :: character_256_ptr
     character(len=256), &
               dimension(:),     allocatable :: minor_gases_lower_red, &
                                                minor_gases_upper_red
@@ -1194,10 +1227,16 @@ contains
     vmr_ref_red(:,0,:) = vmr_ref(:,1,:)
     do i = 1, ngas
       idx = string_loc_in_array(this%gas_names(i), gas_names)
-      vmr_ref_red(:,i,:) = vmr_ref(:,idx+1,:)
+      vmr_ref_red(:,i,:) = vmr_ref(:,idx+1,:) 
     enddo
     call move_alloc(vmr_ref_red, this%vmr_ref)
+#ifdef _CRAYFTN
+    ! BUG-FIX for CCE 12.0.3 -- remove as soon as possible
+    character_32_ptr => this%gas_names
+    !$acc        enter data copyin(this%vmr_ref, character_32_ptr)
+#else
     !$acc        enter data copyin(this%vmr_ref, this%gas_names)
+#endif
     !$omp target enter data map(to:this%vmr_ref, this%gas_names)
     !
     ! Reduce minor arrays so variables only contain minor gases that are available
@@ -1247,7 +1286,6 @@ contains
    !$omp target enter data map(to:this%kminor_start_lower, this%kminor_start_upper)
    !$acc        enter data copyin(this%kminor_lower, this%kminor_upper)
    !$omp target enter data map(to:this%kminor_lower, this%kminor_upper)
-
     ! Arrays not reduced by the presence, or lack thereof, of a gas
     allocate(this%press_ref(size(press_ref)), this%temp_ref(size(temp_ref)), &
              this%kmajor(size(kmajor,4),size(kmajor,2),size(kmajor,3),size(kmajor,1)))
@@ -1256,7 +1294,6 @@ contains
     this%kmajor = RESHAPE(kmajor,(/size(kmajor,4),size(kmajor,2),size(kmajor,3),size(kmajor,1)/), ORDER= (/4,2,3,1/))
     !$acc        enter data copyin(this%press_ref, this%temp_ref, this%kmajor)
     !$omp target enter data map(to:this%press_ref, this%temp_ref, this%kmajor)
-
 
     if(allocated(rayl_lower) .neqv. allocated(rayl_upper)) then
       err_message = "rayl_lower and rayl_upper must have the same allocation status"
@@ -1276,7 +1313,6 @@ contains
     this%press_ref_log(:) = log(this%press_ref(:))
     !$acc        enter data copyin(this%press_ref_log)
     !$omp target enter data map(to:this%press_ref_log)
-
     ! log scale of reference pressure
     this%press_ref_trop_log = log(press_ref_trop)
 
@@ -1290,7 +1326,6 @@ contains
     !$omp target enter data map(to:this%idx_minor_lower, this%idx_minor_upper)
     !$acc        enter data copyin(this%idx_minor_scaling_lower, this%idx_minor_scaling_upper)
     !$omp target enter data map(to:this%idx_minor_scaling_lower, this%idx_minor_scaling_upper)
-
     ! create flavor list
     ! Reduce (remap) key_species list; checks that all key gases are present in incoming
     call create_key_species_reduce(gas_names,this%gas_names, &
@@ -1327,8 +1362,8 @@ contains
     end do
     !$acc        enter data copyin(this%flavor, this%gpoint_flavor, this%is_key)
     !$omp target enter data map(to:this%flavor, this%gpoint_flavor, this%is_key)
-
   end function init_abs_coeffs
+
   ! ----------------------------------------------------------------------------------------------------
   function check_key_species_present_init(gas_names, key_species_present_init) result(err_message)
     logical,          dimension(:), intent(in) :: key_species_present_init
