@@ -69,14 +69,14 @@ contains
 
     !$acc data copyin(flavor,press_ref_log,temp_ref,vmr_ref,play,tlay,col_gas) &
     !$acc      copyin(nlay,ncol,npres,ntemp,nflav,neta) &
-    !$acc      copyin(temp_ref_min,temp_ref_delta,press_ref_log_delta,press_ref_trop_log) &
     !$acc      copyout(jtemp,jpress,tropo,jeta,col_mix,fmajor,fminor) &
     !$acc      create(ftemp,fpress)
     !$omp target data map(to:flavor, press_ref_log, temp_ref, vmr_ref, play, tlay, col_gas) &
     !$omp             map(alloc:jtemp, jpress, tropo, jeta, col_mix, fmajor, fminor) &
     !$omp             map(alloc:ftemp, fpress)
 
-    !$acc parallel loop gang vector collapse(2) default(none) private(locpress)
+    !$acc parallel loop gang vector collapse(2) default(none) private(locpress) &
+    !$acc          firstprivate(temp_ref_min,temp_ref_delta,press_ref_log_delta,press_ref_trop_log)
     !$omp target teams distribute parallel do simd collapse(2)
     do ilay = 1, nlay
       do icol = 1, ncol
@@ -96,10 +96,12 @@ contains
     end do
 
     ! loop over implemented combinations of major species
+
     ! PGI BUG WORKAROUND: if present(vmr_ref) isn't there, OpenACC runtime
     ! thinks it isn't present.
     !$acc parallel loop gang vector collapse(4) default(none) present(vmr_ref) &
     !$acc          private(igases,itropo,ratio_eta_half,eta,loceta,feta,ftemp_term)
+
     !$omp target teams distribute parallel do simd collapse(4) private(igases)
     do iflav = 1, nflav
       do ilay = 1, nlay
