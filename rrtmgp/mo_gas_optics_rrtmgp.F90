@@ -24,14 +24,14 @@ module mo_gas_optics_rrtmgp
   use mo_rte_kind,           only: wp, wl
   use mo_rte_config,         only: check_extents, check_values
   use mo_rte_util_array,     only: zero_array, any_vals_less_than, any_vals_outside, extents_are
-  use mo_optical_props,      only: ty_optical_props
+  use mo_optical_props,      only: ty_optical_props, ty_optical_props_arry, ty_optical_props_1scl, &
+                                   ty_optical_props_2str, ty_optical_props_nstr
   use mo_source_functions,   only: ty_source_func_lw
   use mo_gas_optics_kernels, only: interpolation,                                                       &
                                    compute_tau_absorption, compute_tau_rayleigh, compute_Planck_source
   use mo_rrtmgp_constants,   only: avogad, m_dry, m_h2o, grav
   use mo_rrtmgp_util_string, only: lower_case, string_in_array, string_loc_in_array
   use mo_gas_concentrations, only: ty_gas_concs
-  use mo_optical_props,      only: ty_optical_props_arry, ty_optical_props_1scl, ty_optical_props_2str, ty_optical_props_nstr
   use mo_gas_optics,         only: ty_gas_optics
   use mo_rrtmgp_util_reorder
   implicit none
@@ -154,26 +154,26 @@ module mo_gas_optics_rrtmgp
     ! Type-bound procedures
     ! Public procedures
     ! public interface
-    procedure, public :: get_ngas
-    procedure, private :: get_nflav
-    procedure, public  :: gas_optics_int
-    procedure, public  :: gas_optics_ext
-    procedure, public :: set_tsi
-    procedure, public :: set_solar_variability
     generic,   public :: load       => load_int,       load_ext
-    procedure, private :: load_int
-    procedure, private :: load_ext
     procedure, public :: source_is_internal
     procedure, public :: source_is_external
+    procedure, public :: get_ngas
     procedure, public :: get_gases
     procedure, public :: get_press_min
     procedure, public :: get_press_max
     procedure, public :: get_temp_min
     procedure, public :: get_temp_max
     procedure, public :: compute_optimal_angles
+    procedure, public :: set_solar_variability
+    procedure, public :: set_tsi
     ! Internal procedures
+    procedure, private :: load_int
+    procedure, private :: load_ext
+    procedure, public  :: gas_optics_int
+    procedure, public  :: gas_optics_ext
     procedure, private :: check_key_species_present
     ! Interpolation table dimensions
+    procedure, private :: get_nflav
     procedure, private :: get_neta
     procedure, private :: get_npres
     procedure, private :: get_ntemp
@@ -533,6 +533,9 @@ contains
           error_msg = gas_desc%get_vmr(this%gas_names(igas), vmr(:,:,igas))
         endif
       end do
+    end if
+
+    if(error_msg == '') then
 
       !$acc data copyin(optical_props)
       select type(optical_props)
@@ -585,56 +588,56 @@ contains
       !$acc        data copyout( jtemp, jpress, jeta, tropo, fmajor) create(   col_mix, fminor)
       !$omp target data map(from:jtemp, jpress, jeta, tropo, fmajor) map(alloc:col_mix, fminor)
       call interpolation(               &
-            ncol,nlay,                &        ! problem dimensions
-            ngas, nflav, neta, npres, ntemp, & ! interpolation dimensions
-            this%flavor,              &
-            this%press_ref_log,       &
-            this%temp_ref,            &
-            this%press_ref_log_delta, &
-            this%temp_ref_min,        &
-            this%temp_ref_delta,      &
-            this%press_ref_trop_log,  &
-            this%vmr_ref, &
-            play,         &
-            tlay,         &
-            col_gas,      &
-            jtemp,        & ! outputs
-            fmajor,fminor,&
-            col_mix,      &
-            tropo,        &
-            jeta,jpress)
+              ncol,nlay,                &        ! problem dimensions
+              ngas, nflav, neta, npres, ntemp, & ! interpolation dimensions
+              this%flavor,              &
+              this%press_ref_log,       &
+              this%temp_ref,            &
+              this%press_ref_log_delta, &
+              this%temp_ref_min,        &
+              this%temp_ref_delta,      &
+              this%press_ref_trop_log,  &
+              this%vmr_ref, &
+              play,         &
+              tlay,         &
+              col_gas,      &
+              jtemp,        & ! outputs
+              fmajor,fminor,&
+              col_mix,      &
+              tropo,        &
+              jeta,jpress)
       if (allocated(this%krayl)) then
         !$acc        data copyin(this%gpoint_flavor, this%krayl)    create(tau, tau_rayleigh)
         !$omp target data map(to:this%gpoint_flavor, this%krayl) map(alloc:tau, tau_rayleigh)
         call zero_array(ngpt, nlay, ncol, tau)
         call compute_tau_absorption(                     &
-              ncol,nlay,nband,ngpt,                    &  ! dimensions
-              ngas,nflav,neta,npres,ntemp,             &
-              nminorlower, nminorklower,               & ! number of minor contributors, total num absorption coeffs
-              nminorupper, nminorkupper,               &
-              idx_h2o,                                 &
-              this%gpoint_flavor,                      &
-              this%get_band_lims_gpoint(),             &
-              this%kmajor,                             &
-              this%kminor_lower,                       &
-              this%kminor_upper,                       &
-              this%minor_limits_gpt_lower,             &
-              this%minor_limits_gpt_upper,             &
-              this%minor_scales_with_density_lower,    &
-              this%minor_scales_with_density_upper,    &
-              this%scale_by_complement_lower,          &
-              this%scale_by_complement_upper,          &
-              this%idx_minor_lower,                    &
-              this%idx_minor_upper,                    &
-              this%idx_minor_scaling_lower,            &
-              this%idx_minor_scaling_upper,            &
-              this%kminor_start_lower,                 &
-              this%kminor_start_upper,                 &
-              tropo,                                   &
-              col_mix,fmajor,fminor,                   &
-              play,tlay,col_gas,                       &
-              jeta,jtemp,jpress,                       &
-              tau)
+                ncol,nlay,nband,ngpt,                    &  ! dimensions
+                ngas,nflav,neta,npres,ntemp,             &
+                nminorlower, nminorklower,               & ! number of minor contributors, total num absorption coeffs
+                nminorupper, nminorkupper,               &
+                idx_h2o,                                 &
+                this%gpoint_flavor,                      &
+                this%get_band_lims_gpoint(),             &
+                this%kmajor,                             &
+                this%kminor_lower,                       &
+                this%kminor_upper,                       &
+                this%minor_limits_gpt_lower,             &
+                this%minor_limits_gpt_upper,             &
+                this%minor_scales_with_density_lower,    &
+                this%minor_scales_with_density_upper,    &
+                this%scale_by_complement_lower,          &
+                this%scale_by_complement_upper,          &
+                this%idx_minor_lower,                    &
+                this%idx_minor_upper,                    &
+                this%idx_minor_scaling_lower,            &
+                this%idx_minor_scaling_upper,            &
+                this%kminor_start_lower,                 &
+                this%kminor_start_upper,                 &
+                tropo,                                   &
+                col_mix,fmajor,fminor,                   &
+                play,tlay,col_gas,                       &
+                jeta,jtemp,jpress,                       &
+                tau)
         call compute_tau_rayleigh(         & !Rayleigh scattering optical depths
               ncol,nlay,nband,ngpt,        &
               ngas,nflav,neta,npres,ntemp, & ! dimensions
@@ -650,33 +653,33 @@ contains
       else
         call zero_array(ngpt, nlay, ncol, optical_props%tau)
         call compute_tau_absorption(                     &
-              ncol,nlay,nband,ngpt,                    &  ! dimensions
-              ngas,nflav,neta,npres,ntemp,             &
-              nminorlower, nminorklower,               & ! number of minor contributors, total num absorption coeffs
-              nminorupper, nminorkupper,               &
-              idx_h2o,                                 &
-              this%gpoint_flavor,                      &
-              this%get_band_lims_gpoint(),             &
-              this%kmajor,                             &
-              this%kminor_lower,                       &
-              this%kminor_upper,                       &
-              this%minor_limits_gpt_lower,             &
-              this%minor_limits_gpt_upper,             &
-              this%minor_scales_with_density_lower,    &
-              this%minor_scales_with_density_upper,    &
-              this%scale_by_complement_lower,          &
-              this%scale_by_complement_upper,          &
-              this%idx_minor_lower,                    &
-              this%idx_minor_upper,                    &
-              this%idx_minor_scaling_lower,            &
-              this%idx_minor_scaling_upper,            &
-              this%kminor_start_lower,                 &
-              this%kminor_start_upper,                 &
-              tropo,                                   &
-              col_mix,fmajor,fminor,                   &
-              play,tlay,col_gas,                       &
-              jeta,jtemp,jpress,                       &
-              optical_props%tau)  !
+                ncol,nlay,nband,ngpt,                    &  ! dimensions
+                ngas,nflav,neta,npres,ntemp,             &
+                nminorlower, nminorklower,               & ! number of minor contributors, total num absorption coeffs
+                nminorupper, nminorkupper,               &
+                idx_h2o,                                 &
+                this%gpoint_flavor,                      &
+                this%get_band_lims_gpoint(),             &
+                this%kmajor,                             &
+                this%kminor_lower,                       &
+                this%kminor_upper,                       &
+                this%minor_limits_gpt_lower,             &
+                this%minor_limits_gpt_upper,             &
+                this%minor_scales_with_density_lower,    &
+                this%minor_scales_with_density_upper,    &
+                this%scale_by_complement_lower,          &
+                this%scale_by_complement_upper,          &
+                this%idx_minor_lower,                    &
+                this%idx_minor_upper,                    &
+                this%idx_minor_scaling_lower,            &
+                this%idx_minor_scaling_upper,            &
+                this%kminor_start_lower,                 &
+                this%kminor_start_upper,                 &
+                tropo,                                   &
+                col_mix,fmajor,fminor,                   &
+                play,tlay,col_gas,                       &
+                jeta,jtemp,jpress,                       &
+                optical_props%tau)  !
         select type(optical_props)
           type is (ty_optical_props_2str)
             call zero_array(ncol, nlay, ngpt, optical_props%ssa)
@@ -690,11 +693,8 @@ contains
       !$acc end        data
       !$omp end target data
 
-      if (present(col_dry)) then
-        !$acc        exit data delete(      col_dry)
-        !$omp target exit data map(release: col_dry)
-      else
-        !$acc        exit data delete(     col_dry_arr)                                                        
+      if (.NOT. present(col_dry)) then
+        !$acc        exit data delete(     col_dry_arr)
         !$omp target exit data map(release:col_dry_arr)
       end if
 
@@ -709,13 +709,12 @@ contains
           !$acc        exit data copyout( optical_props%tau, optical_props%ssa, optical_props%p)
           !$omp target exit data map(from:optical_props%tau, optical_props%ssa, optical_props%p)
       end select
-      !$acc end data
-    end if ! error_msg == ''
-
+      !$acc end        data
+    end if
     !$acc end        data
     !$omp end target data
-  end function compute_gas_taus
 
+  end function compute_gas_taus
   !------------------------------------------------------------------------------------------
   !
   ! Compute the spectral solar source function adjusted to account for solar variability
@@ -769,7 +768,6 @@ contains
     if (present(tsi)) error_msg = this%set_tsi(tsi)
 
   end function set_solar_variability
-
   !------------------------------------------------------------------------------------------
   function set_tsi(this, tsi) result(error_msg)
     !
@@ -788,7 +786,7 @@ contains
     else
       !
       ! Scale the solar source function to the input tsi
-       !
+      !
 #ifdef _CRAYFTN
       ! BUG-FIX for CCE 12.0.3 -- remove as soon as possible
       !$acc parallel loop reduction (+:norm)
@@ -802,7 +800,7 @@ contains
       do igpt = 1, size(this%solar_source)
         this%solar_source(igpt) = this%solar_source(igpt) * tsi * norm
       enddo
-#else
+#else 
       !$acc kernels
       !$omp target
       norm = 1._wp/sum(this%solar_source(:))
@@ -810,7 +808,6 @@ contains
       !$acc end kernels
       !$omp end target
 #endif
-
    end if
 
   end function set_tsi
@@ -907,7 +904,6 @@ contains
     !$acc end        data
     !$omp end target data
   end function source
-
   !--------------------------------------------------------------------------------------------------------------------
   !
   ! Initialization
@@ -935,7 +931,7 @@ contains
                     totplnk, planck_frac,                           &
                     rayl_lower, rayl_upper,                         &
                     optimal_angle_fit) result(err_message)
-    class(ty_gas_optics_rrtmgp),     intent(inout) :: this
+    class(ty_gas_optics_rrtmgp),            intent(inout) :: this
     class(ty_gas_concs),                    intent(in   ) :: available_gases ! Which gases does the host model have available?
     character(len=*),   dimension(:),       intent(in   ) :: gas_names
     integer,            dimension(:,:,:),   intent(in   ) :: key_species
@@ -964,6 +960,7 @@ contains
                                                              scale_by_complement_upper
     integer,            dimension(:),       intent(in   ) :: kminor_start_lower,&
                                                              kminor_start_upper
+
     character(len = 128) :: err_message
     ! ----
     !$acc enter data copyin(this)
@@ -1123,7 +1120,6 @@ contains
 #endif
     err_message = this%set_solar_variability(mg_default, sb_default)
   end function load_ext
-
   !--------------------------------------------------------------------------------------------------------------------
   !
   ! Initialize absorption coefficient arrays,
@@ -1150,7 +1146,7 @@ contains
                            kminor_start_upper, &
                            rayl_lower, rayl_upper) result(err_message)
     class(ty_gas_optics_rrtmgp), target, intent(inout) :: this
-    class(ty_gas_concs),                intent(in   ) :: available_gases
+    class(ty_gas_concs),                 intent(in   ) :: available_gases
     character(len=*), &
               dimension(:),       intent(in) :: gas_names
     integer,  dimension(:,:,:),   intent(in) :: key_species
@@ -1187,9 +1183,6 @@ contains
     logical,  dimension(:),     allocatable :: key_species_present_init
     integer,  dimension(:,:,:), allocatable :: key_species_red
     real(wp), dimension(:,:,:), allocatable :: vmr_ref_red
-    real(wp), dimension(:,:,:), pointer     :: vmr_ref_ptr
-    character(len=32),  dimension(:), pointer :: character_32_ptr
-    character(len=256), dimension(:), pointer :: character_256_ptr
     character(len=256), &
               dimension(:),     allocatable :: minor_gases_lower_red, &
                                                minor_gases_upper_red
@@ -1198,6 +1191,7 @@ contains
                                                scaling_gas_upper_red
     integer :: i, j, idx
     integer :: ngas
+    character(len=32), dimension(:), pointer:: character_32_ptr
     ! --------------------------------------
     err_message = this%ty_optical_props%init(band_lims_wavenum, band2gpt)
     if(len_trim(err_message) /= 0) return
@@ -1227,7 +1221,7 @@ contains
     vmr_ref_red(:,0,:) = vmr_ref(:,1,:)
     do i = 1, ngas
       idx = string_loc_in_array(this%gas_names(i), gas_names)
-      vmr_ref_red(:,i,:) = vmr_ref(:,idx+1,:) 
+      vmr_ref_red(:,i,:) = vmr_ref(:,idx+1,:)
     enddo
     call move_alloc(vmr_ref_red, this%vmr_ref)
 #ifdef _CRAYFTN
@@ -1286,6 +1280,7 @@ contains
    !$omp target enter data map(to:this%kminor_start_lower, this%kminor_start_upper)
    !$acc        enter data copyin(this%kminor_lower, this%kminor_upper)
    !$omp target enter data map(to:this%kminor_lower, this%kminor_upper)
+
     ! Arrays not reduced by the presence, or lack thereof, of a gas
     allocate(this%press_ref(size(press_ref)), this%temp_ref(size(temp_ref)), &
              this%kmajor(size(kmajor,4),size(kmajor,2),size(kmajor,3),size(kmajor,1)))
@@ -1294,6 +1289,7 @@ contains
     this%kmajor = RESHAPE(kmajor,(/size(kmajor,4),size(kmajor,2),size(kmajor,3),size(kmajor,1)/), ORDER= (/4,2,3,1/))
     !$acc        enter data copyin(this%press_ref, this%temp_ref, this%kmajor)
     !$omp target enter data map(to:this%press_ref, this%temp_ref, this%kmajor)
+
 
     if(allocated(rayl_lower) .neqv. allocated(rayl_upper)) then
       err_message = "rayl_lower and rayl_upper must have the same allocation status"
@@ -1313,6 +1309,7 @@ contains
     this%press_ref_log(:) = log(this%press_ref(:))
     !$acc        enter data copyin(this%press_ref_log)
     !$omp target enter data map(to:this%press_ref_log)
+
     ! log scale of reference pressure
     this%press_ref_trop_log = log(press_ref_trop)
 
@@ -1326,6 +1323,7 @@ contains
     !$omp target enter data map(to:this%idx_minor_lower, this%idx_minor_upper)
     !$acc        enter data copyin(this%idx_minor_scaling_lower, this%idx_minor_scaling_upper)
     !$omp target enter data map(to:this%idx_minor_scaling_lower, this%idx_minor_scaling_upper)
+
     ! create flavor list
     ! Reduce (remap) key_species list; checks that all key gases are present in incoming
     call create_key_species_reduce(gas_names,this%gas_names, &
@@ -1362,8 +1360,8 @@ contains
     end do
     !$acc        enter data copyin(this%flavor, this%gpoint_flavor, this%is_key)
     !$omp target enter data map(to:this%flavor, this%gpoint_flavor, this%is_key)
-  end function init_abs_coeffs
 
+  end function init_abs_coeffs
   ! ----------------------------------------------------------------------------------------------------
   function check_key_species_present_init(gas_names, key_species_present_init) result(err_message)
     logical,          dimension(:), intent(in) :: key_species_present_init
