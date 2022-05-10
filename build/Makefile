@@ -17,7 +17,7 @@ endif
 RTE_KERNEL_DIR    += ../rte/kernels-fortran
 RRTMGP_KERNEL_DIR += ../rrtmgp/kernels-fortran
 VPATH  = $(RTE_DIR):$(RTE_KERNEL_INTERFACE_DIR):$(RTE_KERNEL_DIR)
-VPATH += $(RRTMGP_DIR):$(RRTMGP_KERNEL_INTERFACE_DIR ):$(RRTMGP_KERNEL_DIR)
+VPATH += $(RRTMGP_DIR):$(RRTMGP_KERNEL_INTERFACE_DIR):$(RRTMGP_KERNEL_DIR)
 #
 # Compiler variables FC, FCFLAGS must be set in the environment
 #
