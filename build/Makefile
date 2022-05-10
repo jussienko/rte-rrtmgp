@@ -1,7 +1,9 @@
 #!/usr/bin/env make
 
-RTE_DIR = ../rte
+RTE_DIR    = ../rte
 RRTMGP_DIR = ../rrtmgp
+RTE_KERNEL_INTERFACE_DIR    = $(RTE_DIR)/kernel-interfaces
+RRTMGP_KERNEL_INTERFACE_DIR = $(RRTMGP_DIR)/kernel-interfaces
 #
 # Choose kernels depending on environment variable
 #
@@ -9,9 +11,13 @@ ifeq ($(RTE_KERNELS), openacc)
   RTE_KERNEL_DIR    = ../rte/kernels-openacc
   RRTMGP_KERNEL_DIR = ../rrtmgp/kernels-openacc
 endif
-RTE_KERNEL_DIR += ../rte/kernels
-RRTMGP_KERNEL_DIR += ../rrtmgp/kernels
-VPATH = $(RTE_DIR):$(RTE_KERNEL_DIR):$(RRTMGP_DIR):$(RRTMGP_KERNEL_DIR)
+#
+# For some kernel file there is no separate OpenACC implementation
+#
+RTE_KERNEL_DIR    += ../rte/kernels-fortran
+RRTMGP_KERNEL_DIR += ../rrtmgp/kernels-fortran
+VPATH  = $(RTE_DIR):$(RTE_KERNEL_INTERFACE_DIR):$(RTE_KERNEL_DIR)
+VPATH += $(RRTMGP_DIR):$(RRTMGP_KERNEL_INTERFACE_DIR ):$(RRTMGP_KERNEL_DIR)
 #
 # Compiler variables FC, FCFLAGS must be set in the environment
 #
