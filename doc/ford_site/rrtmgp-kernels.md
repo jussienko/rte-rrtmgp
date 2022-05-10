@@ -8,7 +8,7 @@ sort: permission-alpha
 graph: true
 md_extensions: markdown.extensions.toc
 title: RRTMGP kernels
-src_dir: ../../rrtmgp/kernels
+src_dir: ../../rrtmgp/kernel-interfaces
 output_dir: ../../public/reference/rrtmgp-kernels
 ...
 

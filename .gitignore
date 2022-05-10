@@ -33,3 +33,6 @@ Makefile.conf
 
 # gh-pages directory
 public
+
+# Jekyll files
+Gemfile.lock
