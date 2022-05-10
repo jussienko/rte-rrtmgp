@@ -8,7 +8,6 @@
 !    Regents of the University of Colorado,
 !    Trustees of Columbia University in the City of New York
 ! All right reserved.
-
 !
 ! Use and duplication is permitted under the terms of the
 !    BSD 3-clause license, see http://opensource.org/licenses/BSD-3-Clause
@@ -17,7 +16,7 @@
 !  Absorption and Rayleigh optical depths,
 !   source functions.
 
-module mo_gas_optics_rrtmgp_kernels
+module mo_gas_optics_rrtmgp_kernels_interface
   use mo_rte_kind, only : wp, wl
   implicit none
   private
@@ -197,4 +196,4 @@ module mo_gas_optics_rrtmgp_kernels
       real(wp), dimension(ncol,     ngpt), intent(out) :: sfc_source_Jac
     end subroutine compute_Planck_source
   end interface
-end module mo_gas_optics_rrtmgp_kernels
+end module mo_gas_optics_rrtmgp_kernels_interface

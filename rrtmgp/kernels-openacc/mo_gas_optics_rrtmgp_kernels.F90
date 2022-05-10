@@ -1,12 +1,13 @@
 ! This code is part of
 ! RRTM for GCM Applications - Parallel (RRTMGP)
 !
-! Eli Mlawer and Robert Pincus
-! Andre Wehe and Jennifer Delamere
+! Contacts: Eli Mlawer and Robert Pincus
 ! email:  rrtmgp@aer.com
 !
-! Copyright 2015,  Atmospheric and Environmental Research and
-! Regents of the University of Colorado.  All right reserved.
+! Copyright 2015-,  Atmospheric and Environmental Research,
+!    Regents of the University of Colorado,
+!    Trustees of Columbia University in the City of New York
+! All right reserved.
 !
 ! Use and duplication is permitted under the terms of the
 !    BSD 3-clause license, see http://opensource.org/licenses/BSD-3-Clause
@@ -14,12 +15,9 @@
 ! Description: Numeric calculations for gas optics. Absorption and Rayleigh optical depths,
 !   source functions.
 
-module mo_gas_optics_kernels
-  use mo_rte_kind,      only: wp, wl
-  use mo_rte_util_array,only: zero_array
+submodule (mo_gas_optics_rrtmgp_kernels_interface) mo_gas_optics_rrtmgp_kernels
+  use mo_rte_util_array,only : zero_array
   implicit none
-  private
-  public :: interpolation, compute_tau_absorption, compute_tau_rayleigh, compute_Planck_source
 contains
   ! --------------------------------------------------------------------------------------
   ! Compute interpolation coefficients
@@ -751,4 +749,4 @@ contains
   end subroutine
   ! ----------------------------------------------------------
 
-end module mo_gas_optics_kernels
+end module mo_gas_optics_rrtmgp_kernels
