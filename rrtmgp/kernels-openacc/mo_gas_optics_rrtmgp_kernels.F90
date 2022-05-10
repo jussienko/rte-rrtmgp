@@ -749,4 +749,4 @@ contains
   end subroutine
   ! ----------------------------------------------------------
 
-end module mo_gas_optics_rrtmgp_kernels
+end submodule mo_gas_optics_rrtmgp_kernels
