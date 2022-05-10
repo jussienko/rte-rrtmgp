@@ -23,7 +23,7 @@ contains
   ! Compute interpolation coefficients
   ! for calculations of major optical depths, minor optical depths, Rayleigh,
   ! and Planck fractions
-  subroutine interpolation( &
+  module subroutine interpolation( &
                 ncol,nlay,ngas,nflav,neta, npres, ntemp, &
                 flavor,                                  &
                 press_ref_log, temp_ref,press_ref_log_delta,    &
@@ -140,7 +140,7 @@ contains
   ! Compute minor and major species opitcal depth from pre-computed interpolation coefficients
   !   (jeta,jtemp,jpress)
   !
-  subroutine compute_tau_absorption(                &
+  module subroutine compute_tau_absorption(                &
                 ncol,nlay,nbnd,ngpt,                &  ! dimensions
                 ngas,nflav,neta,npres,ntemp,        &
                 nminorlower, nminorklower,          & ! number of minor contributors, total num absorption coeffs
@@ -504,7 +504,7 @@ contains
   !
   ! compute Rayleigh scattering optical depths
   !
-  subroutine compute_tau_rayleigh(ncol,nlay,nbnd,ngpt,         &
+  module subroutine compute_tau_rayleigh(ncol,nlay,nbnd,ngpt,         &
                                   ngas,nflav,neta,npres,ntemp, &
                                   gpoint_flavor,band_lims_gpt, &
                                   krayl,                       &
@@ -550,7 +550,7 @@ contains
   end subroutine compute_tau_rayleigh
 
   ! ----------------------------------------------------------
-  subroutine compute_Planck_source(                        &
+  module subroutine compute_Planck_source(                        &
                     ncol, nlay, nbnd, ngpt,                &
                     nflav, neta, npres, ntemp, nPlanckTemp,&
                     tlay, tlev, tsfc, sfc_lay,             &
