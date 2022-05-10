@@ -51,4 +51,4 @@ librrtmgpinterfacef.a: $(RRTMGP_FORTRAN_INTERFACE)
 	ar -rvs librteinterfacef.a $(RRTMGP_FORTRAN_INTERFACE)
 
 clean:
-	rm -f *.optrpt *.mod *.o lib*.a
+	rm -f *.optrpt *.mod *.smod *.o lib*.a

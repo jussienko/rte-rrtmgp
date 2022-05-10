@@ -13,6 +13,7 @@
 # Fortran module files
 *.mod
 *.mod.proxy
+*.smod
 
 # Intel vectorization reports
 *.optrpt
