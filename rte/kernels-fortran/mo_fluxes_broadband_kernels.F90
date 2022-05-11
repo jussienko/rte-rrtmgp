@@ -15,7 +15,7 @@
 !> ## Kernels for computing broadband fluxes
 !>
 ! -------------------------------------------------------------------------------------------------
-submodule (mo_fluxes_broadband_kernel_interfaces) mo_fluxes_broadband_kernels
+submodule (mo_fluxes_broadband_kernel_defs) mo_fluxes_broadband_kernels
   implicit none
 contains
   ! ----------------------------------------------------------------------------

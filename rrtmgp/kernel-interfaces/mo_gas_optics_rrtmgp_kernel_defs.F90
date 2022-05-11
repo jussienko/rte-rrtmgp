@@ -16,7 +16,7 @@
 !  Absorption and Rayleigh optical depths,
 !   source functions.
 
-module mo_gas_optics_rrtmgp_kernel_interfaces
+module mo_gas_optics_rrtmgp_kernel_defs
   use mo_rte_kind, only : wp, wl
   implicit none
   private
@@ -196,4 +196,4 @@ module mo_gas_optics_rrtmgp_kernel_interfaces
       real(wp), dimension(ncol,     ngpt), intent(out) :: sfc_source_Jac
     end subroutine compute_Planck_source
   end interface
-end module mo_gas_optics_rrtmgp_kernel_interfaces
+end module mo_gas_optics_rrtmgp_kernel_defs
