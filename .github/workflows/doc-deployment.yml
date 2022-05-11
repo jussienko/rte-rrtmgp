@@ -1,9 +1,10 @@
 name: Build and Deploy Documentation and Website
 
-on: [push, pull_request]
-  branches:
-    - main
-    - develop
+on:
+  [push, pull_request]:
+    branches:
+      - main
+      - develop
 
 
 jobs:
