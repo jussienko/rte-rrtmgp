@@ -22,7 +22,7 @@ module mo_fluxes
   use mo_rte_config,     only: check_extents
   use mo_rte_util_array, only: extents_are
   use mo_optical_props,  only: ty_optical_props
-  use mo_fluxes_broadband_kernels, &
+  use mo_fluxes_broadband_kernel_interfaces, &
                          only: sum_broadband, net_broadband
   implicit none
   private
