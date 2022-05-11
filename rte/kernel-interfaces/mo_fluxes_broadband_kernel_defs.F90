@@ -11,7 +11,7 @@
 ! Use and duplication is permitted under the terms of the
 !    BSD 3-clause license, see http://opensource.org/licenses/BSD-3-Clause
 ! ---------------------------------------------------------------------------
-module mo_fluxes_broadband_kernel_interfaces
+module mo_fluxes_broadband_kernel_defs
   use, intrinsic :: iso_c_binding
   use mo_rte_kind, only: wp
   implicit none
@@ -63,4 +63,4 @@ module mo_fluxes_broadband_kernel_interfaces
         !! Net (down minus up)
     end subroutine net_broadband_precalc
   end interface
-end module mo_fluxes_broadband_kernel_interfaces
+end module mo_fluxes_broadband_kernel_defs
