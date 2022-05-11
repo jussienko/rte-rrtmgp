@@ -1,7 +1,7 @@
 name: Build and Deploy Documentation and Website
 
 on:
-  [push, pull_request]:
+  push:
     branches:
       - main
       - develop
