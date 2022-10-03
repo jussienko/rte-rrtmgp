@@ -332,7 +332,7 @@ contains
     !$acc data copyout (array) present(this)
     !$omp target data map(from:array)
     if(size(this%concs(igas)%conc, 2) > 1) then
-      !$acc kernels default(none)
+      !$acc kernels default(none) present(p)
       !$omp target
 #ifdef _CRAYFTN
       array(:) = p(1,:)
@@ -342,7 +342,7 @@ contains
       !$acc end kernels
       !$omp end target
     else
-      !$acc kernels default(none)
+      !$acc kernels default(none) present(p)
       !$omp target
 #ifdef _CRAYFTN
       array(:) = p(1,1)
@@ -392,32 +392,32 @@ contains
     !$acc data copyout (array) present(this, this%concs)
     !$omp target data map(from:array)
     if(size(this%concs(igas)%conc, 1) > 1) then      ! Concentration stored as 2D
-      !$acc parallel loop collapse(2) default(none)
+      !$acc parallel loop collapse(2) default(none) present(p)
       !$omp target teams distribute parallel do simd
       do ilay = 1, size(array,2)
         do icol = 1, size(array,1)
           !print *, (size(this%concs))
 #ifdef _CRAYFTN
-           array(icol,ilay) = p(icol,ilay)
+          array(icol,ilay) = p(icol,ilay)
 #else
           array(icol,ilay) = this%concs(igas)%conc(icol,ilay)
 #endif
         end do
       end do
     else if(size(this%concs(igas)%conc, 2) > 1) then ! Concentration stored as 1D
-      !$acc parallel loop collapse(2) default(none)
+      !$acc parallel loop collapse(2) default(none) present(p)
       !$omp target teams distribute parallel do simd
       do ilay = 1, size(array,2)
         do icol = 1, size(array,1)
 #ifdef _CRAYFTN
           array(icol,ilay) = p(1,ilay)
 #else
-         array(icol, ilay) = this%concs(igas)%conc(1,ilay)
+          array(icol, ilay) = this%concs(igas)%conc(1,ilay)
 #endif
         end do
       end do
     else                                             ! Concentration stored as scalar
-      !$acc parallel loop collapse(2) default(none)
+      !$acc parallel loop collapse(2) default(none) present(p)
       !$omp target teams distribute parallel do simd
       do ilay = 1, size(array,2)
         do icol = 1, size(array,1)

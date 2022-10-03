@@ -151,7 +151,11 @@ contains
     !$acc        data copyin(sfc_srcJac) create(   gpt_Jac) if(do_Jacobians)
     !$omp target data map(to:sfc_srcJac) map(alloc:gpt_Jac) if(do_Jacobians)
 
+#ifdef _CRAYFTN 
+    !$acc parallel loop present(An, Cn, gpt_Jac, g) collapse(3)
+#else
     !$acc parallel loop no_create(An, Cn, gpt_Jac, g) collapse(3)
+#endif
     !$omp target teams distribute parallel do simd collapse(3)
     do igpt = 1, ngpt
       do ilay = 1, nlay
@@ -196,7 +200,11 @@ contains
     !
     ! Surface reflection and emission
     !
+#ifdef _CRAYFTN
+    !$acc                         parallel loop    collapse(2) present(gpt_Jac, sfc_srcJac)
+#else
     !$acc                         parallel loop    collapse(2) no_create(gpt_Jac, sfc_srcJac)
+#endif
     !$omp target teams distribute parallel do simd collapse(2)
     do igpt = 1, ngpt
       do icol = 1, ncol
@@ -449,10 +457,11 @@ contains
     real(wp), dimension(ncol       ,ngpt) :: source_sfc
     ! ------------------------------------
     ! ------------------------------------
-    !$acc enter data copyin(tau, ssa, g, lay_source, lev_source_inc, lev_source_dec, sfc_emis, sfc_src, flux_dn)
-    !$omp target enter data map(to:tau, ssa, g, lay_source, lev_source_inc, lev_source_dec, sfc_emis, sfc_src, flux_dn)
-    !$acc enter data create(flux_up, Rdif, Tdif, gamma1, gamma2, sfc_albedo, lev_source, source_dn, source_up, source_sfc)
-    !$omp target enter data map(alloc:flux_up, Rdif, Tdif, gamma1, gamma2, sfc_albedo, lev_source, source_dn, source_up, source_sfc)
+    !$acc data create(Rdif, Tdif, gamma1, gamma2, sfc_albedo, lev_source, source_dn, source_up, source_sfc) &
+    !$acc      copyin(tau,ssa,g,lay_source,lev_source_inc,lev_source_dec,sfc_emis,sfc_src) &
+    !$acc      copyout(flux_dn,flux_up)
+    !$omp target enter data map(to:tau, ssa, g, lay_source, lev_source_inc, lev_source_dec, sfc_emis, sfc_src)
+    !$omp target enter data map(alloc:flux_dn, flux_up, Rdif, Tdif, gamma1, gamma2, sfc_albedo, lev_source, source_dn, source_up, source_sfc)
     !
     ! RRTMGP provides source functions at each level using the spectral mapping
     !   of each adjacent layer. Combine these for two-stream calculations
@@ -495,12 +504,10 @@ contains
                 Rdif, Tdif,                        &
                 source_dn, source_up, source_sfc,  &
                 flux_up, flux_dn)
-    !$acc exit data delete(tau, ssa, g, lay_source, lev_source_inc, lev_source_dec, sfc_emis, sfc_src)
     !$omp target exit data map(release:tau, ssa, g, lay_source, lev_source_inc, lev_source_dec, sfc_emis, sfc_src)
-    !$acc exit data delete(Rdif, Tdif, gamma1, gamma2, sfc_albedo, lev_source, source_dn, source_up, source_sfc)
     !$omp target exit data map(release:Rdif, Tdif, gamma1, gamma2, sfc_albedo, lev_source, source_dn, source_up, source_sfc)
-    !$acc exit data copyout(flux_up, flux_dn)
     !$omp target exit data map(from:flux_up, flux_dn)
+    !$acc end data
   end subroutine lw_solver_2stream
   ! -------------------------------------------------------------------------------------------------
   !
@@ -757,7 +764,9 @@ contains
   ! ---------------------------------------------------------------
   subroutine lw_transport_noscat_dn(ncol, nlay, ngpt, top_at_1, &
                                     trans, source_dn,radn_dn)
+#ifndef _CRAYFTN
     !dir$ optimize(-O0)
+#endif
     integer,                               intent(in   ) :: ncol, nlay, ngpt ! Number of columns, layers, g-points
     logical(wl),                           intent(in   ) :: top_at_1   !
     real(wp), dimension(ncol,nlay  ,ngpt), intent(in   ) :: trans      ! transmissivity = exp(-tau)
@@ -800,7 +809,9 @@ contains
   ! -------------------------------------------------------------------------------------------------
   subroutine lw_transport_noscat_up(ncol, nlay, ngpt, &
                                     top_at_1, trans, source_up, radn_up, do_Jacobians, radn_upJac)
+#ifndef _CRAYFTN
     !dir$ optimize(-O0)
+#endif
     integer,                               intent(in   ) :: ncol, nlay, ngpt ! Number of columns, layers, g-points
     logical(wl),                           intent(in   ) :: top_at_1   !
     real(wp), dimension(ncol,nlay  ,ngpt), intent(in   ) :: trans      ! transmissivity = exp(-tau)
@@ -816,7 +827,11 @@ contains
       !
       ! Top of domain is index 1
       !
+#ifdef _CRAYFTN
+      !$acc  parallel loop collapse(2) present(radn_upJac)
+#else
       !$acc  parallel loop collapse(2) no_create(radn_upJac)
+#endif
       !$omp target teams distribute parallel do simd collapse(2)
       do igpt = 1, ngpt
         do icol = 1, ncol
@@ -835,7 +850,11 @@ contains
       !
       ! Top of domain is index nlay+1
       !
+#ifdef _CRAYFTN
+      !$acc  parallel loop collapse(2) present(radn_upJac)
+#else
       !$acc  parallel loop collapse(2) no_create(radn_upJac)
+#endif
       !$omp target teams distribute parallel do simd collapse(2)
       do igpt = 1, ngpt
         do icol = 1, ncol
@@ -1207,7 +1226,9 @@ contains
                     rdif, tdif,           &
                     src_dn, src_up, src_sfc, &
                     flux_up, flux_dn)
+#ifndef _CRAYFTN
     !dir$ optimize(-O0)
+#endif
     integer,                               intent(in   ) :: ncol, nlay, ngpt
     logical(wl),                           intent(in   ) :: top_at_1
     real(wp), dimension(ncol       ,ngpt), intent(in   ) :: albedo_sfc
@@ -1376,7 +1397,11 @@ subroutine lw_transport_1rescl(ncol, nlay, ngpt, top_at_1, &
       ! Top of domain is index 1
       !
       ! Downward propagation
+#ifdef _CRAYFTN
+      !$acc                         parallel loop    collapse(2) present(radn_up_Jac)
+#else
       !$acc                         parallel loop    collapse(2) no_create(radn_up_Jac)
+#endif
       !$omp target teams distribute parallel do simd collapse(2)
       do igpt = 1, ngpt
         do icol = 1, ncol
@@ -1411,7 +1436,11 @@ subroutine lw_transport_1rescl(ncol, nlay, ngpt, top_at_1, &
         enddo
       enddo
     else
-      !$acc  parallel loop collapse(2) no_create(radn_up_Jac)
+#ifdef _CRAYFTN
+      !$acc parallel loop collapse(2) present(radn_up_Jac)
+#else
+      !$acc parallel loop collapse(2) no_create(radn_up_Jac)
+#endif
       !$omp target teams distribute parallel do simd collapse(2)
       do igpt = 1, ngpt
         do icol = 1, ncol
