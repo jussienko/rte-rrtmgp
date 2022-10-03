@@ -572,7 +572,9 @@ contains
           col_gas(icol,ilay,0) = col_dry_wk(icol,ilay)
         end do
       end do
-    end do
+
+    end if
+
     !
     ! ---- calculate gas optical depths ----
     !
