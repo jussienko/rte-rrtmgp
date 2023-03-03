@@ -400,7 +400,12 @@ contains
     if(error_msg /= "") return
 
     p => this%concs(igas)%conc(:,:)
+! Workaround for Cray compiler issue
+#ifdef _CRAYFTN
+    !$acc data copyout (array) present(this%concs(igas)%conc)
+#else
     !$acc data copyout (array) present(this, this%concs)
+#endif
     !$omp target data map(from:array)
     if(size(this%concs(igas)%conc, 1) > 1) then      ! Concentration stored as 2D
       !$acc parallel loop collapse(2) default(none) present(p)
