@@ -134,7 +134,12 @@ contains
     !$acc        enter data create(   flux_dn,flux_up)
     !$omp target enter data map(alloc:flux_dn,flux_up)
 
+! ACCWA (Cray Fortran 15.0.1) : wrong results with collapse
+#ifdef _CRAYFTN
+    !$acc                         parallel loop    
+#else
     !$acc                         parallel loop    collapse(2)
+#endif
     !$omp target teams distribute parallel do simd collapse(2)
     do igpt = 1, ngpt
       do icol = 1, ncol
@@ -151,7 +156,12 @@ contains
     !$acc        data copyin(sfc_srcJac) create(   gpt_Jac) if(do_Jacobians)
     !$omp target data map(to:sfc_srcJac) map(alloc:gpt_Jac) if(do_Jacobians)
 
-    !$acc parallel loop no_create(An, Cn, gpt_Jac, g) collapse(3)
+! ACCWA (Cray Fortran 15.0.1) : wrong results with collapse
+#ifdef _CRAYFTN
+    !$acc parallel loop no_create(An, Cn, gpt_Jac, g) 
+#else
+    !$acc parallel loop collapse(3) no_create(An, Cn, gpt_Jac, g) 
+#endif
     !$omp target teams distribute parallel do simd collapse(3)
     do igpt = 1, ngpt
       do ilay = 1, nlay
@@ -196,7 +206,12 @@ contains
     !
     ! Surface reflection and emission
     !
+! ACCWA (Cray Fortran 15.0.1) : wrong results with collapse
+#ifdef _CRAYFTN
+    !$acc                         parallel loop     no_create(gpt_Jac, sfc_srcJac)
+#else
     !$acc                         parallel loop    collapse(2) no_create(gpt_Jac, sfc_srcJac)
+#endif
     !$omp target teams distribute parallel do simd collapse(2)
     do igpt = 1, ngpt
       do icol = 1, ncol
@@ -772,7 +787,12 @@ contains
       !
       ! Top of domain is index 1
       !
+! ACCWA (Cray Fortran 15.0.1) : wrong results with collapse
+#ifdef _CRAYFTN
+      !$acc  parallel loop 
+#else
       !$acc  parallel loop collapse(2)
+#endif
       !$omp target teams distribute parallel do simd collapse(2)
       do igpt = 1, ngpt
         do icol = 1, ncol
@@ -785,7 +805,12 @@ contains
       !
       ! Top of domain is index nlay+1
       !
+! ACCWA (Cray Fortran 15.0.1) : wrong results with collapse
+#ifdef _CRAYFTN
+      !$acc  parallel loop 
+#else
       !$acc  parallel loop collapse(2)
+#endif
       !$omp target teams distribute parallel do simd collapse(2)
       do igpt = 1, ngpt
         do icol = 1, ncol
@@ -816,7 +841,12 @@ contains
       !
       ! Top of domain is index 1
       !
+! ACCWA (Cray Fortran 15.0.1) : wrong results with collapse
+#ifdef _CRAYFTN
+      !$acc  parallel loop no_create(radn_upJac)
+#else
       !$acc  parallel loop collapse(2) no_create(radn_upJac)
+#endif
       !$omp target teams distribute parallel do simd collapse(2)
       do igpt = 1, ngpt
         do icol = 1, ncol
@@ -835,7 +865,12 @@ contains
       !
       ! Top of domain is index nlay+1
       !
+! ACCWA (Cray Fortran 15.0.1) : wrong results with collapse
+#ifdef _CRAYFTN
+      !$acc  parallel loop no_create(radn_upJac)
+#else
       !$acc  parallel loop collapse(2) no_create(radn_upJac)
+#endif
       !$omp target teams distribute parallel do simd collapse(2)
       do igpt = 1, ngpt
         do icol = 1, ncol
@@ -1243,7 +1278,12 @@ contains
     !$omp target enter data map(alloc:flux_up, albedo, src, denom)
 
     if(top_at_1) then
+! ACCWA (Cray Fortran 15.0.1) : wrong results with collapse
+#ifdef _CRAYFTN
+      !$acc parallel loop gang vector 
+#else
       !$acc parallel loop gang vector collapse(2)
+#endif
       !$omp target teams distribute parallel do simd collapse(2)
       do igpt = 1, ngpt
         do icol = 1, ncol
@@ -1291,7 +1331,12 @@ contains
 
     else
 
+! ACCWA (Cray Fortran 15.0.1) : wrong results with collapse
+#ifdef _CRAYFTN
+      !$acc parallel loop 
+#else
       !$acc parallel loop collapse(2)
+#endif
       !$omp target teams distribute parallel do simd collapse(2)
       do igpt = 1, ngpt
         do icol = 1, ncol
@@ -1411,7 +1456,7 @@ subroutine lw_transport_1rescl(ncol, nlay, ngpt, top_at_1, &
         enddo
       enddo
     else
-      !$acc  parallel loop collapse(2) no_create(radn_up_Jac)
+      !$acc                         parallel loop    collapse(2) no_create(radn_up_Jac)
       !$omp target teams distribute parallel do simd collapse(2)
       do igpt = 1, ngpt
         do icol = 1, ncol
