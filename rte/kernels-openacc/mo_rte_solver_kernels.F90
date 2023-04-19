@@ -135,6 +135,7 @@ contains
     !$omp target enter data map(alloc:flux_dn,flux_up)
 
 ! ACCWA (Cray Fortran 15.0.1) : wrong results with collapse
+! Workarounds by John Levesque
 #ifdef _CRAYFTN
     !$acc                         parallel loop    
 #else
@@ -142,6 +143,9 @@ contains
 #endif
     !$omp target teams distribute parallel do simd collapse(2)
     do igpt = 1, ngpt
+#ifdef _CRAYFTN
+      !$acc loop
+#endif
       do icol = 1, ncol
         !
         ! Transport is for intensity
@@ -157,6 +161,7 @@ contains
     !$omp target data map(to:sfc_srcJac) map(alloc:gpt_Jac) if(do_Jacobians)
 
 ! ACCWA (Cray Fortran 15.0.1) : wrong results with collapse
+! Workarounds by John Levesque
 #ifdef _CRAYFTN
     !$acc parallel loop no_create(An, Cn, gpt_Jac, g) 
 #else
@@ -164,7 +169,11 @@ contains
 #endif
     !$omp target teams distribute parallel do simd collapse(3)
     do igpt = 1, ngpt
+#ifdef _CRAYFTN
+      !$acc loop
+#endif
       do ilay = 1, nlay
+        !$acc loop
         do icol = 1, ncol
           !
           ! The wb and scaleTau terms are independent of propagation
@@ -207,6 +216,7 @@ contains
     ! Surface reflection and emission
     !
 ! ACCWA (Cray Fortran 15.0.1) : wrong results with collapse
+! Workarounds by John Levesque
 #ifdef _CRAYFTN
     !$acc                         parallel loop     no_create(gpt_Jac, sfc_srcJac)
 #else
@@ -214,6 +224,9 @@ contains
 #endif
     !$omp target teams distribute parallel do simd collapse(2)
     do igpt = 1, ngpt
+#ifdef _CRAYFTN
+      !$acc loop
+#endif
       do icol = 1, ncol
         !
         ! Surface albedo, surface source function
@@ -788,6 +801,7 @@ contains
       ! Top of domain is index 1
       !
 ! ACCWA (Cray Fortran 15.0.1) : wrong results with collapse
+! Workarounds by John Levesque
 #ifdef _CRAYFTN
       !$acc  parallel loop 
 #else
@@ -795,6 +809,9 @@ contains
 #endif
       !$omp target teams distribute parallel do simd collapse(2)
       do igpt = 1, ngpt
+#ifdef _CRAYFTN
+        !$acc loop
+#endif
         do icol = 1, ncol
           do ilev = 2, nlay+1
             radn_dn(icol,ilev,igpt) = trans(icol,ilev-1,igpt)*radn_dn(icol,ilev-1,igpt) + source_dn(icol,ilev-1,igpt)
@@ -806,6 +823,7 @@ contains
       ! Top of domain is index nlay+1
       !
 ! ACCWA (Cray Fortran 15.0.1) : wrong results with collapse
+! Workarounds by John Levesque
 #ifdef _CRAYFTN
       !$acc  parallel loop 
 #else
@@ -813,6 +831,9 @@ contains
 #endif
       !$omp target teams distribute parallel do simd collapse(2)
       do igpt = 1, ngpt
+#ifdef _CRAYFTN
+        !$acc loop
+#endif
         do icol = 1, ncol
           do ilev = nlay, 1, -1
             radn_dn(icol,ilev,igpt) = trans(icol,ilev  ,igpt)*radn_dn(icol,ilev+1,igpt) + source_dn(icol,ilev,igpt)
@@ -842,6 +863,7 @@ contains
       ! Top of domain is index 1
       !
 ! ACCWA (Cray Fortran 15.0.1) : wrong results with collapse
+! Workarounds by John Levesque
 #ifdef _CRAYFTN
       !$acc  parallel loop no_create(radn_upJac)
 #else
@@ -849,6 +871,9 @@ contains
 #endif
       !$omp target teams distribute parallel do simd collapse(2)
       do igpt = 1, ngpt
+#ifdef _CRAYFTN
+        !$acc loop
+#endif
         do icol = 1, ncol
           do ilev = nlay, 1, -1
             radn_up     (icol,ilev,igpt) = trans(icol,ilev,igpt)*radn_up   (icol,ilev+1,igpt) + source_up(icol,ilev,igpt)
@@ -866,6 +891,7 @@ contains
       ! Top of domain is index nlay+1
       !
 ! ACCWA (Cray Fortran 15.0.1) : wrong results with collapse
+! Workarounds by John Levesque
 #ifdef _CRAYFTN
       !$acc  parallel loop no_create(radn_upJac)
 #else
@@ -873,6 +899,9 @@ contains
 #endif
       !$omp target teams distribute parallel do simd collapse(2)
       do igpt = 1, ngpt
+#ifdef _CRAYFTN
+        !$acc loop
+#endif
         do icol = 1, ncol
           do ilev = 2, nlay+1
             radn_up     (icol,ilev,igpt) = trans(icol,ilev-1,igpt) * radn_up   (icol,ilev-1,igpt) +  source_up(icol,ilev-1,igpt)
@@ -1279,13 +1308,17 @@ contains
 
     if(top_at_1) then
 ! ACCWA (Cray Fortran 15.0.1) : wrong results with collapse
+! Workarounds by John Levesque
 #ifdef _CRAYFTN
-      !$acc parallel loop gang vector 
+      !$acc parallel loop gang
 #else
       !$acc parallel loop gang vector collapse(2)
 #endif
       !$omp target teams distribute parallel do simd collapse(2)
       do igpt = 1, ngpt
+#ifdef _CRAYFTN
+        !$acc loop vector
+#endif
         do icol = 1, ncol
           ilev = nlay + 1
           ! Albedo of lowest level is the surface albedo...
@@ -1332,6 +1365,7 @@ contains
     else
 
 ! ACCWA (Cray Fortran 15.0.1) : wrong results with collapse
+! Workarounds by John Levesque
 #ifdef _CRAYFTN
       !$acc parallel loop 
 #else
@@ -1339,6 +1373,9 @@ contains
 #endif
       !$omp target teams distribute parallel do simd collapse(2)
       do igpt = 1, ngpt
+#ifdef _CRAYFTN
+        !$acc parallel loop vector 
+#endif
         do icol = 1, ncol
           ilev = 1
           ! Albedo of lowest level is the surface albedo...
