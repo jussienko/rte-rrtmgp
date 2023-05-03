@@ -173,7 +173,9 @@ contains
       !$acc loop
 #endif
       do ilay = 1, nlay
+#ifdef _CRAYFTN      
         !$acc loop
+#endif
         do icol = 1, ncol
           !
           ! The wb and scaleTau terms are independent of propagation
