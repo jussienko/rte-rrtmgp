@@ -136,14 +136,14 @@ contains
 
 ! ACCWA (Cray Fortran 15.0.1) : wrong results with collapse
 ! Workarounds by John Levesque
-#ifdef _CRAYFTN
+#if defined(_CRAYFTN) && _RELEASE_MAJOR <= 15 && _RELEASE_MINOR <= 0 && _RELEASE_PATCHLEVEL <= 1
     !$acc                         parallel loop    
 #else
     !$acc                         parallel loop    collapse(2)
 #endif
     !$omp target teams distribute parallel do simd collapse(2)
     do igpt = 1, ngpt
-#ifdef _CRAYFTN
+#if defined(_CRAYFTN) && _RELEASE_MAJOR <= 15 && _RELEASE_MINOR <= 0 && _RELEASE_PATCHLEVEL <= 1
       !$acc loop
 #endif
       do icol = 1, ncol
@@ -162,18 +162,18 @@ contains
 
 ! ACCWA (Cray Fortran 15.0.1) : wrong results with collapse
 ! Workarounds by John Levesque
-#ifdef _CRAYFTN
+#if defined(_CRAYFTN) && _RELEASE_MAJOR <= 15 && _RELEASE_MINOR <= 0 && _RELEASE_PATCHLEVEL <= 1
     !$acc parallel loop no_create(An, Cn, gpt_Jac, g) 
 #else
     !$acc parallel loop collapse(3) no_create(An, Cn, gpt_Jac, g) 
 #endif
     !$omp target teams distribute parallel do simd collapse(3)
     do igpt = 1, ngpt
-#ifdef _CRAYFTN
+#if defined(_CRAYFTN) && _RELEASE_MAJOR <= 15 && _RELEASE_MINOR <= 0 && _RELEASE_PATCHLEVEL <= 1
       !$acc loop
 #endif
       do ilay = 1, nlay
-#ifdef _CRAYFTN      
+#if defined(_CRAYFTN) && _RELEASE_MAJOR <= 15 && _RELEASE_MINOR <= 0 && _RELEASE_PATCHLEVEL <= 1
         !$acc loop
 #endif
         do icol = 1, ncol
@@ -219,14 +219,14 @@ contains
     !
 ! ACCWA (Cray Fortran 15.0.1) : wrong results with collapse
 ! Workarounds by John Levesque
-#ifdef _CRAYFTN
+#if defined(_CRAYFTN) && _RELEASE_MAJOR <= 15 && _RELEASE_MINOR <= 0 && _RELEASE_PATCHLEVEL <= 1
     !$acc                         parallel loop     no_create(gpt_Jac, sfc_srcJac)
 #else
     !$acc                         parallel loop    collapse(2) no_create(gpt_Jac, sfc_srcJac)
 #endif
     !$omp target teams distribute parallel do simd collapse(2)
     do igpt = 1, ngpt
-#ifdef _CRAYFTN
+#if defined(_CRAYFTN) && _RELEASE_MAJOR <= 15 && _RELEASE_MINOR <= 0 && _RELEASE_PATCHLEVEL <= 1
       !$acc loop
 #endif
       do icol = 1, ncol
@@ -804,14 +804,14 @@ contains
       !
 ! ACCWA (Cray Fortran 15.0.1) : wrong results with collapse
 ! Workarounds by John Levesque
-#ifdef _CRAYFTN
+#if defined(_CRAYFTN) && _RELEASE_MAJOR <= 15 && _RELEASE_MINOR <= 0 && _RELEASE_PATCHLEVEL <= 1
       !$acc  parallel loop 
 #else
       !$acc  parallel loop collapse(2)
 #endif
       !$omp target teams distribute parallel do simd collapse(2)
       do igpt = 1, ngpt
-#ifdef _CRAYFTN
+#if defined(_CRAYFTN) && _RELEASE_MAJOR <= 15 && _RELEASE_MINOR <= 0 && _RELEASE_PATCHLEVEL <= 1
         !$acc loop
 #endif
         do icol = 1, ncol
@@ -826,14 +826,14 @@ contains
       !
 ! ACCWA (Cray Fortran 15.0.1) : wrong results with collapse
 ! Workarounds by John Levesque
-#ifdef _CRAYFTN
+#if defined(_CRAYFTN) && _RELEASE_MAJOR <= 15 && _RELEASE_MINOR <= 0 && _RELEASE_PATCHLEVEL <= 1
       !$acc  parallel loop 
 #else
       !$acc  parallel loop collapse(2)
 #endif
       !$omp target teams distribute parallel do simd collapse(2)
       do igpt = 1, ngpt
-#ifdef _CRAYFTN
+#if defined(_CRAYFTN) && _RELEASE_MAJOR <= 15 && _RELEASE_MINOR <= 0 && _RELEASE_PATCHLEVEL <= 1
         !$acc loop
 #endif
         do icol = 1, ncol
@@ -866,14 +866,14 @@ contains
       !
 ! ACCWA (Cray Fortran 15.0.1) : wrong results with collapse
 ! Workarounds by John Levesque
-#ifdef _CRAYFTN
+#if defined(_CRAYFTN) && _RELEASE_MAJOR <= 15 && _RELEASE_MINOR <= 0 && _RELEASE_PATCHLEVEL <= 1
       !$acc  parallel loop no_create(radn_upJac)
 #else
       !$acc  parallel loop collapse(2) no_create(radn_upJac)
 #endif
       !$omp target teams distribute parallel do simd collapse(2)
       do igpt = 1, ngpt
-#ifdef _CRAYFTN
+#if defined(_CRAYFTN) && _RELEASE_MAJOR <= 15 && _RELEASE_MINOR <= 0 && _RELEASE_PATCHLEVEL <= 1
         !$acc loop
 #endif
         do icol = 1, ncol
@@ -894,14 +894,14 @@ contains
       !
 ! ACCWA (Cray Fortran 15.0.1) : wrong results with collapse
 ! Workarounds by John Levesque
-#ifdef _CRAYFTN
+#if defined(_CRAYFTN) && _RELEASE_MAJOR <= 15 && _RELEASE_MINOR <= 0 && _RELEASE_PATCHLEVEL <= 1
       !$acc  parallel loop no_create(radn_upJac)
 #else
       !$acc  parallel loop collapse(2) no_create(radn_upJac)
 #endif
       !$omp target teams distribute parallel do simd collapse(2)
       do igpt = 1, ngpt
-#ifdef _CRAYFTN
+#if defined(_CRAYFTN) && _RELEASE_MAJOR <= 15 && _RELEASE_MINOR <= 0 && _RELEASE_PATCHLEVEL <= 1
         !$acc loop
 #endif
         do icol = 1, ncol
@@ -1311,14 +1311,14 @@ contains
     if(top_at_1) then
 ! ACCWA (Cray Fortran 15.0.1) : wrong results with collapse
 ! Workarounds by John Levesque
-#ifdef _CRAYFTN
+#if defined(_CRAYFTN) && _RELEASE_MAJOR <= 15 && _RELEASE_MINOR <= 0 && _RELEASE_PATCHLEVEL <= 1
       !$acc parallel loop gang
 #else
       !$acc parallel loop gang vector collapse(2)
 #endif
       !$omp target teams distribute parallel do simd collapse(2)
       do igpt = 1, ngpt
-#ifdef _CRAYFTN
+#if defined(_CRAYFTN) && _RELEASE_MAJOR <= 15 && _RELEASE_MINOR <= 0 && _RELEASE_PATCHLEVEL <= 1
         !$acc loop vector
 #endif
         do icol = 1, ncol
@@ -1368,14 +1368,14 @@ contains
 
 ! ACCWA (Cray Fortran 15.0.1) : wrong results with collapse
 ! Workarounds by John Levesque
-#ifdef _CRAYFTN
+#if defined(_CRAYFTN) && _RELEASE_MAJOR <= 15 && _RELEASE_MINOR <= 0 && _RELEASE_PATCHLEVEL <= 1
       !$acc parallel loop 
 #else
       !$acc parallel loop collapse(2)
 #endif
       !$omp target teams distribute parallel do simd collapse(2)
       do igpt = 1, ngpt
-#ifdef _CRAYFTN
+#if defined(_CRAYFTN) && _RELEASE_MAJOR <= 15 && _RELEASE_MINOR <= 0 && _RELEASE_PATCHLEVEL <= 1
         !$acc parallel loop vector 
 #endif
         do icol = 1, ncol
