@@ -401,7 +401,7 @@ contains
 
     p => this%concs(igas)%conc(:,:)
 ! Workaround for Cray compiler issue
-if defined(_CRAYFTN) && _RELEASE_MAJOR <= 15 && _RELEASE_MINOR <= 0 && _RELEASE_PATCHLEVEL <= 1
+#if defined(_CRAYFTN) && _RELEASE_MAJOR <= 15 && _RELEASE_MINOR <= 0 && _RELEASE_PATCHLEVEL <= 1
     !$acc data copyout (array) present(this%concs(igas)%conc)
 #else
     !$acc data copyout (array) present(this, this%concs)
