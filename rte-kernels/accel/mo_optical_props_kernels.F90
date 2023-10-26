@@ -893,8 +893,8 @@ contains
     integer :: icol, ilay, igpt
 
     !$acc parallel loop collapse(3) &
-    !$acc&     copyout(array_out(:cole-cols+1,:nlay,:ngpt)) &
-    !$acc&     copyin(array_in(cols:cole,:nlay,:ngpt))
+    !$acc&     copyout(array_out) &
+    !$acc&     copyin(array_in)
     !$omp target teams distribute parallel do simd collapse(3) &
     !$omp& map(from:array_out) &
     !$omp& map(to:array_in)
