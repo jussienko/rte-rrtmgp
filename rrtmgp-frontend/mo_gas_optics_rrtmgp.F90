@@ -1985,7 +1985,13 @@ contains
   subroutine combine_abs_and_rayleigh(tau, tau_rayleigh, optical_props)
     real(wp), dimension(:,:,:),   intent(in   ) :: tau
     real(wp), dimension(:,:,:),   intent(in   ) :: tau_rayleigh
+!ACCWA alias needed due to compiler bug
+#if defined(_CRAYFTN) && _RELEASE_MAJOR >= 17
+    class(ty_optical_props_arry), target, intent(inout) :: optical_props
+    real(wp), pointer :: tau_pnt(:,:,:), ssa_pnt(:,:,:)
+#else
     class(ty_optical_props_arry), intent(inout) :: optical_props
+#endif
 
     integer :: icol, ilay, igpt, ncol, nlay, ngpt, nmom
     real(wp) :: t
@@ -1995,6 +2001,10 @@ contains
     ngpt = size(tau, 3)
     select type(optical_props)
     type is (ty_optical_props_1scl)
+!ACCWA alias needed due to compiler bug
+#if defined(_CRAYFTN) && _RELEASE_MAJOR >= 17
+      tau_pnt => optical_props%tau
+#endif
       !
       ! Extinction optical depth
       !
@@ -2003,8 +2013,13 @@ contains
       do igpt = 1, ngpt
         do ilay = 1, nlay
           do icol = 1, ncol
+#if defined(_CRAYFTN) && _RELEASE_MAJOR >= 17
+            tau_pnt(icol,ilay,igpt) = tau(icol,ilay,igpt) + &
+                                       tau_rayleigh(icol,ilay,igpt)
+#else
             optical_props%tau(icol,ilay,igpt) = tau(icol,ilay,igpt) + &
                                        tau_rayleigh(icol,ilay,igpt)
+#endif
           end do
         end do
       end do
@@ -2012,6 +2027,11 @@ contains
     ! asymmetry factor or phase function moments
     !
     type is (ty_optical_props_2str)
+!ACCWA alias needed due to compiler bug
+#if defined(_CRAYFTN) && _RELEASE_MAJOR >= 17
+      ssa_pnt => optical_props%ssa
+      tau_pnt => optical_props%tau
+#endif
       !
       ! Extinction optical depth and single scattering albedo
       !
@@ -2021,17 +2041,31 @@ contains
         do ilay = 1, nlay
           do icol = 1, ncol
             t = tau(icol,ilay,igpt) + tau_rayleigh(icol,ilay,igpt)
+#if defined(_CRAYFTN) && _RELEASE_MAJOR >= 17
+            if(t > 2._wp * tiny(t)) then
+               ssa_pnt(icol,ilay,igpt) = tau_rayleigh(icol,ilay,igpt) / t
+             else
+               ssa_pnt(icol,ilay,igpt) = 0._wp
+             end if
+             tau_pnt(icol,ilay,igpt) = t
+#else
             if(t > 2._wp * tiny(t)) then
                optical_props%ssa(icol,ilay,igpt) = tau_rayleigh(icol,ilay,igpt) / t
              else
                optical_props%ssa(icol,ilay,igpt) = 0._wp
              end if
              optical_props%tau(icol,ilay,igpt) = t
+#endif
            end do
         end do
       end do
       call zero_array(ncol, nlay, ngpt, optical_props%g)
     type is (ty_optical_props_nstr)
+!ACCWA alias needed due to compiler bug
+#if defined(_CRAYFTN) && _RELEASE_MAJOR >= 17
+      ssa_pnt => optical_props%ssa
+      tau_pnt => optical_props%tau
+#endif
       !
       ! Extinction optical depth and single scattering albedo
       !
@@ -2041,12 +2075,21 @@ contains
         do ilay = 1, nlay
           do icol = 1, ncol
             t = tau(icol,ilay,igpt) + tau_rayleigh(icol,ilay,igpt)
+#if defined(_CRAYFTN) && _RELEASE_MAJOR >= 17
+            if(t > 2._wp * tiny(t)) then
+               ssa_pnt(icol,ilay,igpt) = tau_rayleigh(icol,ilay,igpt) / t
+             else
+               ssa_pnt(icol,ilay,igpt) = 0._wp
+             end if
+             tau_pnt(icol,ilay,igpt) = t
+#else
             if(t > 2._wp * tiny(t)) then
                optical_props%ssa(icol,ilay,igpt) = tau_rayleigh(icol,ilay,igpt) / t
              else
                optical_props%ssa(icol,ilay,igpt) = 0._wp
              end if
              optical_props%tau(icol,ilay,igpt) = t
+#endif
            end do
         end do
       end do
